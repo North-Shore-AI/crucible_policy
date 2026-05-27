@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-labelledby="title desc">
+  <title id="title">crucible_policy logo</title>
+  <desc id="desc">A graphite hexagonal control matrix with red, blue, and white gates.</desc>
+  <defs>
+    <linearGradient id="graphite" x1="24" y1="18" x2="176" y2="182" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#28313d"/>
+      <stop offset="0.52" stop-color="#11151b"/>
+      <stop offset="1" stop-color="#050608"/>
+    </linearGradient>
+    <linearGradient id="gate" x1="54" y1="54" x2="146" y2="146" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3fa7ff"/>
+      <stop offset="0.5" stop-color="#f5f7ff"/>
+      <stop offset="1" stop-color="#ff405c"/>
+    </linearGradient>
+    <filter id="gateGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="clip">
+      <polygon points="100,12 176,56 176,144 100,188 24,144 24,56"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <polygon points="100,12 176,56 176,144 100,188 24,144 24,56" fill="url(#graphite)"/>
+    <path d="M44 64 H156 M44 100 H156 M44 136 H156 M64 44 V156 M100 44 V156 M136 44 V156" stroke="#e9f1ff" stroke-opacity="0.13" stroke-width="2"/>
+    <rect x="56" y="56" width="88" height="88" rx="8" fill="#000000" fill-opacity="0.22" stroke="url(#gate)" stroke-width="3" filter="url(#gateGlow)"/>
+    <path d="M72 100 H92 L100 78 L108 122 L116 100 H136" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M72 72 L128 128 M128 72 L72 128" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+    <g>
+      <circle cx="72" cy="100" r="8" fill="#10151b" stroke="#3fa7ff" stroke-width="3"/>
+      <circle cx="100" cy="78" r="7" fill="#10151b" stroke="#f5f7ff" stroke-width="3"/>
+      <circle cx="108" cy="122" r="7" fill="#10151b" stroke="#ff405c" stroke-width="3"/>
+      <circle cx="136" cy="100" r="8" fill="#10151b" stroke="#ff405c" stroke-width="3"/>
+    </g>
+    <path d="M52 154 L148 154" stroke="#3fa7ff" stroke-opacity="0.55" stroke-width="3"/>
+    <path d="M52 46 L148 46" stroke="#ff405c" stroke-opacity="0.55" stroke-width="3"/>
+  </g>
+  <polygon points="100,12 176,56 176,144 100,188 24,144 24,56" fill="none" stroke="#f5f7ff" stroke-width="3"/>
+</svg>

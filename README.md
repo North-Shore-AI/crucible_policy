@@ -1,0 +1,40 @@
+<p align="center">
+  <img src="assets/crucible_policy.svg" width="200" height="200" alt="crucible_policy logo" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/North-Shore-AI/crucible_policy">
+    <img alt="GitHub: crucible_policy" src="https://img.shields.io/badge/GitHub-crucible_policy-0b0f14?logo=github" />
+  </a>
+  <a href="https://github.com/North-Shore-AI/crucible_policy/blob/main/LICENSE">
+    <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0b0f14.svg" />
+  </a>
+</p>
+
+# CruciblePolicy
+
+Routing, gating, fusion, uncertainty, verifier, shared memory, and steering
+decision contracts over Crucible signal traces.
+
+## Stack Position
+
+`crucible_policy` sits above signal traces. It consumes bounded evidence and
+emits structured decisions without owning model execution or Trinity product
+flows.
+
+## Installation
+
+```elixir
+def deps do
+  [
+    {:crucible_policy, "~> 0.1.0"}
+  ]
+end
+```
+
+## Boundary
+
+This package owns policy and decision contracts. Bumblebee logits processors
+and Trinity orchestration consume these decisions but are not owned here.
+
+Documentation can be generated with `mix docs` and published to HexDocs.
