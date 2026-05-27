@@ -69,6 +69,7 @@ Crucible signal and trace contracts and do not require a specific model family.
 - [Quickstart](guides/quickstart.md)
 - [Concepts](guides/concepts.md)
 - [Incremental Policy](guides/incremental_policy.md)
+- [Offline Policy Replay](guides/offline_policy_replay.md)
 - [Uncertainty](guides/uncertainty.md)
 - [Steering](guides/steering.md)
 - [Active Control](guides/active_control.md)
@@ -76,3 +77,13 @@ Crucible signal and trace contracts and do not require a specific model family.
 - [Testing](guides/testing.md)
 
 Documentation can be generated with `mix docs` and published to HexDocs.
+
+## V4 Status
+
+Status: `schema-compatible`.
+
+V4 adds deterministic offline replay over canonical `Crucible.ForwardTrace`
+values. `Crucible.Policy.PolicyPlan.evaluate/2` applies final-logits entropy
+and margin rules first, then records explicit skip metadata for unavailable
+generation logits, hidden-state drift, trajectory drift, and active correction
+capabilities.

@@ -97,6 +97,28 @@ defmodule CruciblePolicy.PolicyPlanTest do
              PolicyPlan.negotiate_early_exit(@plan, %{}, capable)
   end
 
+  test "V4 policy replay evaluates canonical forward traces with skip metadata" do
+    trace = %Crucible.ForwardTrace{
+      trace_id: "trace-v4-policy",
+      provider_kind: :elixir_bumblebee,
+      model_id: "hf-internal-testing/tiny-random-gpt2",
+      signals: [
+        %Crucible.SignalRecord{
+          signal_id: "sig-final-logits",
+          trace_id: "trace-v4-policy",
+          signal_type: :final_logits,
+          tensor_summary:
+            Crucible.TensorSummary.compute([3.0, 2.75, 0.0], entropy: true, top_k: 3)
+        }
+      ]
+    }
+
+    assert {:ok, %Crucible.PolicyDecision{} = decision} = PolicyPlan.evaluate(@plan, trace)
+    assert decision.selected_policy == :final_logits_margin_v0
+    assert decision.selected_action == :verifier
+    assert Enum.any?(decision.skipped_policies, &(&1.policy == :trajectory_drift_v1))
+  end
+
   defp trace_with_logits(trace_suffix, logits) do
     trace_id = "trace-#{trace_suffix}"
 

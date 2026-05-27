@@ -28,8 +28,15 @@ defmodule CruciblePolicy.PolicyPlan do
     struct(__MODULE__, attrs)
   end
 
-  def evaluate(%__MODULE__{} = plan, %ForwardTrace{} = trace, opts \\ []) do
+  def evaluate(plan, trace, opts \\ [])
+
+  def evaluate(%__MODULE__{} = plan, %ForwardTrace{} = trace, opts) do
     CruciblePolicy.Policy.decide(trace, Keyword.put(opts, :plan, plan))
+  end
+
+  def evaluate(%__MODULE__{} = _plan, %Crucible.ForwardTrace{} = trace, opts) do
+    config = Keyword.get(opts, :config, %Crucible.Policy.PolicyConfig{})
+    {:ok, Crucible.Policy.PolicyPlan.evaluate(trace, config)}
   end
 
   def evaluate_signal(
