@@ -37,4 +37,21 @@ end
 This package owns policy and decision contracts. Bumblebee logits processors
 and Trinity orchestration consume these decisions but are not owned here.
 
+## Usage
+
+```elixir
+alias CruciblePolicy.{LogitSteering, SteeringPlan}
+
+{:ok, route_decision} = CruciblePolicy.decide(forward_trace)
+
+steering =
+  SteeringPlan.new!(
+    trace_id: forward_trace.trace_id,
+    token_biases: %{42 => 1.25},
+    banned_token_ids: [0]
+  )
+
+steered_logits = LogitSteering.apply([0.1, 0.2, 0.3], steering)
+```
+
 Documentation can be generated with `mix docs` and published to HexDocs.

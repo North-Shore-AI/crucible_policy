@@ -39,6 +39,10 @@ defmodule CruciblePolicy.MixProject do
 
   defp deps do
     [
+      {:crucible_signal, path: "../crucible_signal"},
+      {:crucible_signal_trace, path: "../crucible_signal_trace"},
+      {:jason, "~> 1.4"},
+      {:nx, "~> 0.12"},
       {:ex_doc, "~> 0.40.1", only: [:dev, :test], runtime: false}
     ]
   end

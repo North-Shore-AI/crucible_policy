@@ -10,4 +10,7 @@ defmodule CruciblePolicy do
 
   @doc "Returns the package version."
   def version, do: @version
+
+  @doc "Runs the deterministic first-slice policy over a forward trace."
+  def decide(trace, opts \\ []), do: CruciblePolicy.Policy.decide(trace, opts)
 end
