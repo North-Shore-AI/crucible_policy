@@ -72,7 +72,8 @@ defmodule CruciblePolicy.Uncertainty do
   end
 
   def combine(uncertainties) when is_list(uncertainties) do
-    Enum.reduce(uncertainties, %__MODULE__{}, fn uncertainty, acc ->
+    Enum.reduce(uncertainties, %__MODULE__{}, fn %__MODULE__{} = uncertainty,
+                                                 %__MODULE__{} = acc ->
       %__MODULE__{
         acc
         | token_entropy: max_number(acc.token_entropy, uncertainty.token_entropy),
