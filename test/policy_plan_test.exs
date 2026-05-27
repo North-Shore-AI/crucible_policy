@@ -119,6 +119,87 @@ defmodule CruciblePolicy.PolicyPlanTest do
     assert Enum.any?(decision.skipped_policies, &(&1.policy == :trajectory_drift_v1))
   end
 
+  test "V5 policy replay executes top-k stability and spilled-energy policies" do
+    trace =
+      canonical_trace("trace-v5-generation", [
+        canonical_signal(:final_logits, [4.0, 1.0, 0.0]),
+        canonical_signal(:generation_step_logits, [5.0, 4.0, 0.0], token_index: 0),
+        canonical_signal(:generation_step_logits, [0.0, 1.0, 5.0], token_index: 1)
+      ])
+
+    config = %Crucible.Policy.PolicyConfig{
+      top_k_stability_threshold: 0.75,
+      spilled_energy_threshold: 0.01
+    }
+
+    assert {:ok, %Crucible.PolicyDecision{} = decision} =
+             PolicyPlan.evaluate(@plan, trace, config: config)
+
+    assert Enum.any?(decision.evidence, &(&1.rule == :top_k_stability_floor))
+    assert Enum.any?(decision.evidence, &(&1.rule == :spilled_energy_delta))
+    refute Enum.any?(decision.skipped_policies, &(&1.policy == :spilled_energy_v0))
+  end
+
+  test "V5 policy replay executes hidden-state norm drift when hidden states exist" do
+    trace =
+      canonical_trace("trace-v5-hidden", [
+        canonical_signal(:final_logits, [4.0, 1.0, 0.0]),
+        canonical_signal(:hidden_state, [1.0, 0.0], layer_index: 0),
+        canonical_signal(:hidden_state, [10.0, 0.0], layer_index: 1)
+      ])
+
+    assert {:ok, %Crucible.PolicyDecision{} = decision} =
+             PolicyPlan.evaluate(@plan, trace,
+               config: %Crucible.Policy.PolicyConfig{hidden_norm_drift_threshold: 1.0}
+             )
+
+    assert decision.selected_policy == :hidden_state_norm_drift_v0
+    assert decision.selected_action == :verifier
+  end
+
+  test "V5 policy replay executes trajectory drift when intermediate logits exist" do
+    trace =
+      canonical_trace("trace-v5-trajectory", [
+        canonical_signal(:final_logits, [4.0, 1.0, 0.0]),
+        canonical_signal(:intermediate_logits, [8.0, 0.0], layer_index: 0),
+        canonical_signal(:intermediate_logits, [0.0, 0.0], layer_index: 1)
+      ])
+
+    assert {:ok, %Crucible.PolicyDecision{} = decision} =
+             PolicyPlan.evaluate(@plan, trace,
+               config: %Crucible.Policy.PolicyConfig{trajectory_drift_threshold: 0.1}
+             )
+
+    assert decision.selected_policy == :trajectory_drift_v1
+    assert decision.selected_action == :verifier
+  end
+
+  test "V5 correction policy is dry-run only and skips without capability" do
+    unsupported =
+      canonical_trace("trace-v5-no-correction", [canonical_signal(:final_logits, [4.0, 1.0])])
+
+    assert {:ok, unsupported_decision} = PolicyPlan.evaluate(@plan, unsupported)
+
+    assert Enum.any?(
+             unsupported_decision.skipped_policies,
+             &(&1.policy == :correction_plan_v0 and &1.reason == :capability_unavailable)
+           )
+
+    supported =
+      canonical_trace(
+        "trace-v5-correction",
+        [canonical_signal(:final_logits, [4.0, 1.0])],
+        capability_report: %{resource_budget: %{supports_active_injection?: true}}
+      )
+
+    assert {:ok, supported_decision} = PolicyPlan.evaluate(@plan, supported)
+
+    assert Enum.any?(
+             supported_decision.evidence,
+             &(&1.rule == :active_mutation_guard and &1.execute_mutation? == false)
+           )
+  end
+
   defp trace_with_logits(trace_suffix, logits) do
     trace_id = "trace-#{trace_suffix}"
 
@@ -140,5 +221,37 @@ defmodule CruciblePolicy.PolicyPlanTest do
         ),
       summary: TensorSummary.summarize(logits, entropy: true)
     )
+  end
+
+  defp canonical_trace(trace_id, signals, attrs \\ []) do
+    struct(
+      Crucible.ForwardTrace,
+      %{
+        trace_id: trace_id,
+        provider_kind: :elixir_bumblebee,
+        model_id: "hf-internal-testing/tiny-random-gpt2",
+        model_family: :gpt2,
+        backend: :binary,
+        signals: signals,
+        capability_report: Keyword.get(attrs, :capability_report)
+      }
+    )
+  end
+
+  defp canonical_signal(signal_type, values, attrs \\ []) do
+    %Crucible.SignalRecord{
+      signal_id:
+        "#{signal_type}:#{Keyword.get(attrs, :token_index, Keyword.get(attrs, :layer_index, "final"))}",
+      trace_id: "trace-v5",
+      signal_type: signal_type,
+      provider_kind: :elixir_bumblebee,
+      model_id: "hf-internal-testing/tiny-random-gpt2",
+      model_family: :gpt2,
+      backend: :binary,
+      layer_index: Keyword.get(attrs, :layer_index),
+      token_index: Keyword.get(attrs, :token_index),
+      tensor_summary: Crucible.TensorSummary.compute(values, entropy: true, top_k: 3),
+      metadata: Keyword.get(attrs, :metadata, %{})
+    }
   end
 end
