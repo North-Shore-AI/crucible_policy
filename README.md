@@ -40,7 +40,7 @@ and Trinity orchestration consume these decisions but are not owned here.
 ## Usage
 
 ```elixir
-alias CruciblePolicy.{LogitSteering, SteeringPlan}
+alias CruciblePolicy.{DecisionContext, LogitSteering, PolicyPlan, SteeringPlan}
 
 {:ok, route_decision} = CruciblePolicy.decide(forward_trace)
 
@@ -52,6 +52,27 @@ steering =
   )
 
 steered_logits = LogitSteering.apply([0.1, 0.2, 0.3], steering)
+
+plan = PolicyPlan.new()
+context = DecisionContext.new(trace_id: "trace-1", runtime_profile: %{model_id: "model:fixture"})
+{:continue, context} = PolicyPlan.evaluate_incremental(plan, %{signal_records: []}, context)
 ```
+
+## Model Boundary
+
+This library is model-agnostic. Model names and modified Trinity model profiles
+belong in callers, examples, or downstream adapters. Policy decisions operate on
+Crucible signal and trace contracts and do not require a specific model family.
+
+## Guides
+
+- [Quickstart](guides/quickstart.md)
+- [Concepts](guides/concepts.md)
+- [Incremental Policy](guides/incremental_policy.md)
+- [Uncertainty](guides/uncertainty.md)
+- [Steering](guides/steering.md)
+- [Active Control](guides/active_control.md)
+- [Working Examples](guides/working_examples.md)
+- [Testing](guides/testing.md)
 
 Documentation can be generated with `mix docs` and published to HexDocs.

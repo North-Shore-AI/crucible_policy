@@ -4,10 +4,13 @@ defmodule CruciblePolicyTest do
 
   alias CruciblePolicy.{
     ControlVector,
+    DecisionContext,
     FusionDecision,
     GateDecision,
     LogitSteering,
+    PolicyPlan,
     RouteDecision,
+    RunningScalar,
     SharedMemoryWrite,
     SteeringPlan,
     Uncertainty,
@@ -40,12 +43,20 @@ defmodule CruciblePolicyTest do
     assert decision.selected_target == :thinker
   end
 
-  test "deterministic policy selects verifier for high entropy" do
-    trace = trace_with_logits("verifier", List.duplicate(0.0, 24))
+  test "deterministic policy selects thinker for high entropy" do
+    trace = trace_with_logits("thinker-high-entropy", List.duplicate(0.0, 24))
+
+    assert {:ok, decision} = CruciblePolicy.decide(trace)
+    assert decision.selected_target == :thinker
+    assert decision.decision.uncertainty.entropy > 2.5
+  end
+
+  test "deterministic policy selects verifier for low output margin" do
+    trace = trace_with_logits("verifier-margin", [1.0, 0.96, 0.0])
 
     assert {:ok, decision} = CruciblePolicy.decide(trace)
     assert decision.selected_target == :verifier
-    assert decision.decision.uncertainty.entropy > 2.5
+    assert decision.decision.uncertainty.margin < 0.15
   end
 
   test "uncertainty captures nonfinite and trajectory drift components" do
@@ -70,8 +81,59 @@ defmodule CruciblePolicyTest do
     uncertainty = Uncertainty.from_trace(trace)
 
     assert uncertainty.layer_drift == 0.9
+    assert uncertainty.trace_entropy == 0.2
     assert uncertainty.nan_or_inf
     assert Uncertainty.high?(uncertainty)
+  end
+
+  test "running scalar tracks token entropy incrementally" do
+    scalar = RunningScalar.from_values([1.0, 2.0, 3.0])
+
+    assert scalar.count == 3
+    assert scalar.mean == 2.0
+    assert scalar.variance == 2 / 3
+    assert scalar.min == 1.0
+    assert scalar.max == 3.0
+  end
+
+  test "policy plan evaluates token-boundary signal records" do
+    plan = PolicyPlan.new(high_entropy_threshold: 10.0, steering_entropy_threshold: 1.0)
+
+    context =
+      DecisionContext.new(
+        trace_id: "trace-incremental",
+        runtime_profile: %{model_id: "model:fixture"}
+      )
+
+    record = logits_record("trace-incremental", [0.0, 0.0, 0.0], token_index: 4)
+
+    assert {:steer, %SteeringPlan{} = steering, next_context} =
+             PolicyPlan.evaluate_signal(plan, record, context)
+
+    assert steering.mode == :token_boundary
+    assert next_context.token_index == 4
+    assert next_context.running_entropy.count == 1
+  end
+
+  test "in-graph steering fails closed without surface capability" do
+    plan =
+      SteeringPlan.new!(
+        trace_id: "trace-steer",
+        mode: :in_graph,
+        energies: [%{source: :policy_rule, kind: :safety, energy: 1.0, weight: 1.0}]
+      )
+
+    context = DecisionContext.new(surface_id: "surface:fixture")
+
+    assert SteeringPlan.validate_surface(plan, context) == {:error, :steering_surface_unavailable}
+
+    capable =
+      DecisionContext.new(
+        surface_id: "surface:fixture",
+        metadata: %{capabilities: [:in_graph_steering]}
+      )
+
+    assert SteeringPlan.validate_surface(plan, capable) == :ok
   end
 
   test "builds gate, fusion, verifier, control vector, and memory contracts" do
@@ -92,8 +154,8 @@ defmodule CruciblePolicyTest do
       passed?: true
     }
 
-    vector = %ControlVector{vector_id: "cv", trace_id: "trace-1", shape: [1, 4], dtype: :f32}
-    memory = %SharedMemoryWrite{memory_ref: "mem", trace_id: "trace-1", signal_refs: ["sig"]}
+    vector = ControlVector.new!(vector_id: "cv", trace_id: "trace-1", shape: [1, 4], dtype: :f32)
+    memory = SharedMemoryWrite.new!(memory_ref: "mem", trace_id: "trace-1", signal_refs: ["sig"])
 
     assert gate.action == :verify
     assert fusion.fusion_mode == :weighted_logits
@@ -102,15 +164,34 @@ defmodule CruciblePolicyTest do
     assert memory.retention == :ephemeral
   end
 
-  test "steering plan can bias and ban logits" do
+  test "active-control handoff requires negotiated capabilities" do
+    vector = ControlVector.new!(vector_id: "cv", trace_id: "trace-1", target_tap: "residual:12")
+    memory = SharedMemoryWrite.new!(memory_ref: "mem", trace_id: "trace-1")
+
+    assert {:ok, %{action: :active_control_handoff}} = ControlVector.handoff(vector, [:inject])
+
+    assert {:error, %GateDecision{reason: :unsupported_active_control}} =
+             ControlVector.handoff(vector, [])
+
+    assert {:ok, %{action: :memory_write_handoff}} =
+             SharedMemoryWrite.handoff(memory, [:shared_memory])
+
+    assert {:error, %GateDecision{reason: :unsupported_active_control}} =
+             SharedMemoryWrite.handoff(memory, [])
+  end
+
+  test "steering plan can bias, penalize, and ban logits" do
     plan =
       SteeringPlan.new!(
         trace_id: "trace-1",
         token_biases: %{1 => 1.5, "2" => -0.5},
-        banned_token_ids: [0]
+        banned_token_ids: [0],
+        energies: [
+          %{source: :policy_rule, kind: :safety, energy: %{1 => 0.2, "2" => 0.5}, weight: 2.0}
+        ]
       )
 
-    assert LogitSteering.apply([1.0, 1.0, 1.0], plan) == [:neg_infinity, 2.5, 0.5]
+    assert LogitSteering.apply([1.0, 1.0, 1.0], plan) == [:neg_infinity, 2.1, -0.5]
   end
 
   test "encodes route decisions to JSON" do
@@ -127,24 +208,40 @@ defmodule CruciblePolicyTest do
 
     ForwardTrace.new!(
       trace_id: trace_id,
-      model_ref: "qwen3:fixture",
+      model_ref: "model:fixture",
       signal_records: [
-        SignalRecord.new!(
-          signal_ref: signal_ref(trace_id, :final_logits),
-          summary: TensorSummary.summarize(logits, entropy: true)
-        )
+        logits_record(trace_id, logits)
       ]
     )
   end
 
-  defp signal_ref(trace_id, signal_type) do
-    SignalRef.new!(
-      trace_id: trace_id,
-      signal_id: "#{signal_type}:0",
-      signal_type: signal_type,
-      model_ref: "qwen3:fixture",
-      dtype: :f32,
-      shape: {1, 3}
+  defp logits_record(trace_id, logits, opts \\ []) do
+    SignalRecord.new!(
+      signal_ref:
+        signal_ref(trace_id, :final_logits,
+          token_index: Keyword.get(opts, :token_index),
+          shape: {1, length(logits)}
+        ),
+      summary: TensorSummary.summarize(logits, entropy: true)
     )
+  end
+
+  defp signal_ref(trace_id, signal_type, opts) do
+    SignalRef.new!(
+      [
+        trace_id: trace_id,
+        signal_id: "#{signal_type}:0",
+        signal_type: signal_type,
+        model_ref: "model:fixture",
+        dtype: :f32,
+        shape: Keyword.get(opts, :shape, {1, 3}),
+        token_index: Keyword.get(opts, :token_index)
+      ]
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    )
+  end
+
+  defp signal_ref(trace_id, signal_type) do
+    signal_ref(trace_id, signal_type, [])
   end
 end
