@@ -1,6 +1,6 @@
 defmodule Crucible.Policy.PolicyConfig do
   @moduledoc """
-  Deterministic V4 policy replay configuration.
+  Deterministic V4/V5 policy replay configuration.
   """
 
   @derive Jason.Encoder

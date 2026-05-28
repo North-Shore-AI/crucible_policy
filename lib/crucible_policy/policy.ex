@@ -1,6 +1,6 @@
 defmodule CruciblePolicy.Policy do
   @moduledoc """
-  Deterministic first-slice policy over a forward trace.
+  Deterministic legacy first-slice policy over a forward trace.
   """
 
   alias CruciblePolicy.{PolicyPlan, RouteDecision, Uncertainty}

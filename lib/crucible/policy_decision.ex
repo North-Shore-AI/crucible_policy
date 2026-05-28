@@ -1,6 +1,6 @@
 defmodule Crucible.PolicyDecision do
   @moduledoc """
-  V4 canonical policy decision over replayed trace evidence.
+  V4/V5 canonical policy decision over replayed trace evidence.
   """
 
   @derive Jason.Encoder

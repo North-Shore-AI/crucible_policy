@@ -23,7 +23,7 @@ mix run examples/cross_model_comparison_live.exs -- \
 
 ```elixir
 {:ok, trace} =
-  CrucibleSignalTrace.Ingest.from_jsonl("../crucible_bumblebee/tmp/crucible_v4/model_forward_live.trace.jsonl")
+  CrucibleSignalTrace.Ingest.from_jsonl("tmp/crucible_v5/traces/native/model_forward_live.trace.jsonl")
 
 decision = Crucible.Policy.PolicyPlan.evaluate(trace)
 ```
