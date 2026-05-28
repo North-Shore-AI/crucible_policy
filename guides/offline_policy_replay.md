@@ -1,6 +1,7 @@
 # Offline Policy Replay
 
-Purpose: evaluate V4 policy rules without running a live model.
+Purpose: evaluate V5 policy rules over canonical traces without running a live
+model.
 
 ## What this covers
 
@@ -8,6 +9,15 @@ Purpose: evaluate V4 policy rules without running a live model.
 `Crucible.ForwardTrace` assembled from JSONL and applies deterministic
 final-logits policies with explicit skip metadata for unavailable optional
 signals.
+
+Cross-model comparison uses the same replay path and summarizes scalar policy
+evidence across real traces:
+
+```bash
+mix run examples/cross_model_comparison_live.exs -- \
+  --out tmp/crucible_v5/reports/cross_model_policy.json \
+  tmp/crucible_v5/traces/python/*.jsonl
+```
 
 ## Quickstart
 

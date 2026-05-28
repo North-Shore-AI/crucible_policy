@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.FinalLogitsMarginPolicy do
-  @moduledoc "V4 top-1/top-2 margin replay rule."
+  @moduledoc "V4/V5 top-1/top-2 margin replay rule."
 
   def evaluate(trace, config) do
     with {:ok, top_k} <- final_logits_top_k(trace),

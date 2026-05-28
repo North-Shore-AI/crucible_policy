@@ -78,12 +78,22 @@ Crucible signal and trace contracts and do not require a specific model family.
 
 Documentation can be generated with `mix docs` and published to HexDocs.
 
-## V4 Status
+## V5 Status
 
-Status: `schema-compatible`.
+Status: `policy-ladder-cross-model-passing`.
 
-V4 adds deterministic offline replay over canonical `Crucible.ForwardTrace`
-values. `Crucible.Policy.PolicyPlan.evaluate/2` applies final-logits entropy
-and margin rules first, then records explicit skip metadata for unavailable
-generation logits, hidden-state drift, trajectory drift, and active correction
-capabilities.
+V5 evaluates canonical `Crucible.ForwardTrace` values with entropy, margin,
+top-k stability, spilled-energy, hidden-state norm drift, trajectory drift, and
+dry-run correction-plan policies. Missing optional signals produce explicit
+skip metadata rather than hidden fallbacks.
+
+`CruciblePolicy.compare_traces/2` and
+`Crucible.Policy.CrossModelComparison.compare/2` build bounded cross-model
+reports over real traces without copying raw tensor arrays. The V5 real-trace
+gate exercised the Phase 15 Python/PyTorch `gpt2` and
+`hf-internal-testing/tiny-random-gpt2` traces and wrote:
+
+```text
+tmp/crucible_v5/reports/crucible_policy_cross_model_python_phase16.json
+tmp/crucible_v5/transcripts/crucible_policy_cross_model_python_phase16.log
+```

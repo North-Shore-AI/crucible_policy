@@ -17,6 +17,12 @@ defmodule CruciblePolicy do
   @doc "Evaluates a completed forward trace with a policy plan."
   def evaluate(plan, trace, opts \\ []), do: CruciblePolicy.PolicyPlan.evaluate(plan, trace, opts)
 
+  @doc "Builds a bounded cross-model comparison report for canonical Crucible traces."
+  def compare_traces(traces, opts \\ []) when is_list(traces) do
+    config = Keyword.get(opts, :config, %Crucible.Policy.PolicyConfig{})
+    Crucible.Policy.CrossModelComparison.compare(traces, config)
+  end
+
   @doc "Evaluates one incremental signal record at a token boundary."
   def evaluate_signal(plan, record, context),
     do: CruciblePolicy.PolicyPlan.evaluate_signal(plan, record, context)
