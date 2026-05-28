@@ -1,6 +1,6 @@
 defmodule Crucible.Policy.CrossModelComparison do
   @moduledoc """
-  V5 cross-model policy comparison over canonical Crucible traces.
+  Cross-model policy comparison over canonical Crucible traces.
 
   The comparison is intentionally bounded: it evaluates each trace through the
   existing policy ladder, extracts scalar policy evidence, and reports per-model
@@ -67,10 +67,10 @@ defmodule Crucible.Policy.CrossModelComparison do
 
   defp evidence_value(decision, rule, field) do
     decision.evidence
-    |> Enum.find(&(Map.get(&1, :rule) == rule || Map.get(&1, "rule") == Atom.to_string(rule)))
+    |> Enum.find(&(Map.get(&1, :rule) == rule))
     |> case do
       nil -> nil
-      evidence -> Map.get(evidence, field) || Map.get(evidence, Atom.to_string(field))
+      evidence -> Map.get(evidence, field)
     end
   end
 
@@ -98,7 +98,6 @@ defmodule Crucible.Policy.CrossModelComparison do
     do: Enum.find(trace.signals, &(&1.signal_type == signal_type))
 
   defp logit(%{logit: value}), do: value
-  defp logit(%{"logit" => value}), do: value
   defp logit(value) when is_number(value), do: value
   defp logit(_value), do: nil
 

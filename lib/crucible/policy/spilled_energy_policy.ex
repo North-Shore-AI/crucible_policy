@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.SpilledEnergyPolicy do
-  @moduledoc "V5 spilled-energy policy over generation step logits."
+  @moduledoc "Spilled-energy policy over generation step logits."
 
   def evaluate(trace, config) do
     steps = signals(trace, :generation_step_logits)
@@ -36,7 +36,7 @@ defmodule Crucible.Policy.SpilledEnergyPolicy do
 
   defp step_energy(%{tensor_summary: %{top_k: top_k}}) when is_list(top_k) do
     top_k
-    |> Enum.map(&(Map.get(&1, :logit) || Map.get(&1, "logit")))
+    |> Enum.map(&Map.get(&1, :logit))
     |> Enum.reject(&is_nil/1)
     |> logsumexp()
   end

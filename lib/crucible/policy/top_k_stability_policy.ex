@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.TopKStabilityPolicy do
-  @moduledoc "V5 top-k stability policy over generation step logits."
+  @moduledoc "Top-k stability policy over generation step logits."
 
   def evaluate(trace, config) do
     steps = signals(trace, :generation_step_logits)
@@ -41,7 +41,7 @@ defmodule Crucible.Policy.TopKStabilityPolicy do
   defp token_set(signal) do
     signal.tensor_summary
     |> Map.get(:top_k, [])
-    |> Enum.map(&(Map.get(&1, :token_id) || Map.get(&1, "token_id")))
+    |> Enum.map(&Map.get(&1, :token_id))
     |> Enum.reject(&is_nil/1)
     |> MapSet.new()
   end

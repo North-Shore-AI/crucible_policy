@@ -1,6 +1,6 @@
 # Offline Policy Replay
 
-Purpose: evaluate V5 policy rules over canonical traces without running a live
+Purpose: evaluate policy rules over canonical traces without running a live
 model.
 
 ## What this covers

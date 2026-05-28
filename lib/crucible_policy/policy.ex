@@ -1,10 +1,10 @@
 defmodule CruciblePolicy.Policy do
   @moduledoc """
-  Deterministic legacy first-slice policy over a forward trace.
+  Deterministic route policy over a canonical forward trace.
   """
 
+  alias Crucible.ForwardTrace
   alias CruciblePolicy.{PolicyPlan, RouteDecision, Uncertainty}
-  alias CrucibleSignalTrace.ForwardTrace
 
   def decide(%ForwardTrace{} = trace, opts \\ []) do
     plan = normalize_plan(Keyword.get(opts, :plan, %{}))
@@ -27,11 +27,11 @@ defmodule CruciblePolicy.Policy do
        trace_id: trace.trace_id,
        policy_ref: plan.policy_ref,
        selected_target: target,
-       selected_model: Keyword.get(opts, :selected_model, trace.model_ref),
+       selected_model: Keyword.get(opts, :selected_model, trace.model_id),
        confidence: confidence,
        uncertainty: %{uncertainty | policy_confidence: confidence},
        evidence_refs: evidence_refs(trace),
-       metadata: %{policy: :first_slice}
+       metadata: %{policy: :deterministic_route}
      )}
   end
 
@@ -65,8 +65,8 @@ defmodule CruciblePolicy.Policy do
   end
 
   defp evidence_refs(%ForwardTrace{} = trace) do
-    trace.signal_records
-    |> Enum.map(& &1.signal_ref.signal_id)
+    trace.signals
+    |> Enum.map(& &1.signal_id)
     |> Enum.reject(&is_nil/1)
   end
 

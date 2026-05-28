@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.HiddenStateNormDriftPolicy do
-  @moduledoc "V5 hidden-state norm drift policy."
+  @moduledoc "Hidden-state norm drift policy."
 
   def evaluate(trace, config) do
     hidden_states = signals(trace, :hidden_state)

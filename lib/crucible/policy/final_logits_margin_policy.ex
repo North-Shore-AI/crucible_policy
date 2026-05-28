@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.FinalLogitsMarginPolicy do
-  @moduledoc "V4/V5 top-1/top-2 margin replay rule."
+  @moduledoc "Top-1/top-2 margin replay rule."
 
   def evaluate(trace, config) do
     with {:ok, top_k} <- final_logits_top_k(trace),
@@ -40,7 +40,6 @@ defmodule Crucible.Policy.FinalLogitsMarginPolicy do
   end
 
   defp margin([%{logit: first}, %{logit: second} | _rest]), do: {:ok, first - second}
-  defp margin([%{"logit" => first}, %{"logit" => second} | _rest]), do: {:ok, first - second}
 
   defp margin([first, second | _rest]) when is_number(first) and is_number(second),
     do: {:ok, first - second}

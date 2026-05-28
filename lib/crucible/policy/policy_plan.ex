@@ -1,6 +1,6 @@
 defmodule Crucible.Policy.PolicyPlan do
   @moduledoc """
-  V5 offline policy replay with explicit degradation metadata.
+  Offline policy replay with explicit degradation metadata.
   """
 
   alias Crucible.Policy.{

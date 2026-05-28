@@ -3,7 +3,8 @@ defmodule CruciblePolicy.Uncertainty do
   Structured uncertainty components derived from signal traces.
   """
 
-  alias CrucibleSignalTrace.{ForwardTrace, LayerTrajectory, SignalRecord}
+  alias Crucible.{ForwardTrace, SignalRecord}
+  alias CrucibleSignalTrace.LayerTrajectory
 
   @derive Jason.Encoder
   defstruct token_entropy: nil,
@@ -52,8 +53,8 @@ defmodule CruciblePolicy.Uncertainty do
   end
 
   def from_signal(%SignalRecord{} = record, %__MODULE__{} = prior \\ %__MODULE__{}) do
-    entropy = summary_field(record.summary, :entropy)
-    signal_type = record.signal_ref.signal_type
+    entropy = summary_field(record.tensor_summary, :entropy)
+    signal_type = record.signal_type
 
     prior
     |> maybe_put(:token_entropy, entropy)
@@ -108,11 +109,11 @@ defmodule CruciblePolicy.Uncertainty do
   end
 
   defp final_logits_summary(%ForwardTrace{} = trace) do
-    trace.signal_records
-    |> Enum.find(fn record -> record.signal_ref.signal_type == :final_logits end)
+    trace.signals
+    |> Enum.find(fn record -> record.signal_type == :final_logits end)
     |> case do
       nil -> nil
-      record -> record.summary
+      record -> record.tensor_summary
     end
   end
 
@@ -123,7 +124,7 @@ defmodule CruciblePolicy.Uncertainty do
 
   defp summary_margin(summary) do
     case Map.get(summary, :top_k, []) do
-      [first, second | _rest] -> first - second
+      [first, second | _rest] -> logit(first) - logit(second)
       _other -> nil
     end
   end
@@ -149,11 +150,11 @@ defmodule CruciblePolicy.Uncertainty do
   end
 
   defp signal_entropy(%ForwardTrace{} = trace, signal_type) do
-    trace.signal_records
-    |> Enum.find(fn record -> record.signal_ref.signal_type == signal_type end)
+    trace.signals
+    |> Enum.find(fn record -> record.signal_type == signal_type end)
     |> case do
       nil -> nil
-      record -> summary_field(record.summary, :entropy)
+      record -> summary_field(record.tensor_summary, :entropy)
     end
   end
 
@@ -180,9 +181,9 @@ defmodule CruciblePolicy.Uncertainty do
   defp logit_lens_stability(_trace), do: nil
 
   defp intra_model_kl(%ForwardTrace{} = trace, final_entropy) when is_number(final_entropy) do
-    trace.signal_records
-    |> Enum.filter(fn record -> record.signal_ref.signal_type == :logit_lens_intermediate end)
-    |> Enum.map(fn record -> summary_field(record.summary, :entropy) end)
+    trace.signals
+    |> Enum.filter(fn record -> record.signal_type == :logit_lens_intermediate end)
+    |> Enum.map(fn record -> summary_field(record.tensor_summary, :entropy) end)
     |> Enum.filter(&is_number/1)
     |> Enum.map(&abs(&1 - final_entropy))
     |> case do
@@ -205,6 +206,10 @@ defmodule CruciblePolicy.Uncertainty do
   defp min_number(nil, value), do: value
   defp min_number(value, nil), do: value
   defp min_number(left, right), do: min(left, right)
+
+  defp logit(%{logit: value}) when is_number(value), do: value
+  defp logit(value) when is_number(value), do: value
+  defp logit(_value), do: 0.0
 
   defp truthy?(value), do: value in [true, "true", 1]
 end

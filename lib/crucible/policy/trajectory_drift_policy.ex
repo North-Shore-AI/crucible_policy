@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.TrajectoryDriftPolicy do
-  @moduledoc "V5 trajectory drift policy over intermediate/logit-lens summaries."
+  @moduledoc "Trajectory drift policy over intermediate/logit-lens summaries."
 
   @trajectory_signals [:intermediate_logits, :logit_lens_projection, :logit_lens_intermediate]
 

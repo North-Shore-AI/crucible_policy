@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.CorrectionPlanPolicy do
-  @moduledoc "V5 dry-run correction-plan policy."
+  @moduledoc "Dry-run correction-plan policy."
 
   def evaluate(trace, _config) do
     if active_correction_supported?(trace) do

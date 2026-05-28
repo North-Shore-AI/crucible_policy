@@ -1,6 +1,5 @@
 alias CruciblePolicy.{DecisionContext, PolicyPlan, SteeringPlan}
-alias CrucibleSignal.{SignalRef, TensorSummary}
-alias CrucibleSignalTrace.SignalRecord
+alias Crucible.{SignalRecord, TensorSummary}
 
 trace_id = "trace-policy-plan-example"
 plan = PolicyPlan.new(high_entropy_threshold: 10.0, steering_entropy_threshold: 1.0)
@@ -8,15 +7,13 @@ context = DecisionContext.new(trace_id: trace_id, runtime_profile: %{model_id: "
 
 record =
   SignalRecord.new!(
-    signal_ref:
-      SignalRef.for_final_logits(
-        trace_id: trace_id,
-        signal_id: "final_logits:step:0",
-        model_ref: "model:fixture",
-        token_index: 0,
-        shape: {1, 3}
-      ),
-    summary: TensorSummary.summarize([0.0, 0.0, 0.0], entropy: true)
+    trace_id: trace_id,
+    signal_id: "final_logits:step:0",
+    signal_type: :final_logits,
+    model_id: "model:fixture",
+    token_index: 0,
+    shape: [1, 3],
+    tensor_summary: TensorSummary.compute([0.0, 0.0, 0.0], entropy: true)
   )
 
 {:steer, %SteeringPlan{} = steering, next_context} =

@@ -1,5 +1,5 @@
 defmodule Crucible.Policy.FinalLogitsEntropyPolicy do
-  @moduledoc "V4/V5 final-logits entropy replay rule."
+  @moduledoc "Final-logits entropy replay rule."
 
   def evaluate(trace, config) do
     with {:ok, signal} <- final_logits(trace),

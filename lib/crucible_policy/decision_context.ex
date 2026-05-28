@@ -3,8 +3,8 @@ defmodule CruciblePolicy.DecisionContext do
   Incremental policy state carried across token-boundary signal events.
   """
 
+  alias Crucible.SignalRecord
   alias CruciblePolicy.{RunningScalar, Uncertainty}
-  alias CrucibleSignalTrace.SignalRecord
 
   @derive Jason.Encoder
   defstruct trace_id: nil,
@@ -41,7 +41,7 @@ defmodule CruciblePolicy.DecisionContext do
 
   def put_signal(%__MODULE__{} = context, %SignalRecord{} = record, opts \\ []) do
     max_window = Keyword.get(opts, :max_window, 16)
-    token_index = record.signal_ref.token_index || context.token_index
+    token_index = record.token_index || context.token_index
 
     %{
       context

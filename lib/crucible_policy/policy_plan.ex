@@ -3,11 +3,11 @@ defmodule CruciblePolicy.PolicyPlan do
   Deterministic policy thresholds for completed and incremental trace evidence.
   """
 
+  alias Crucible.{ForwardTrace, SignalRecord}
   alias CruciblePolicy.{DecisionContext, RouteDecision, SteeringPlan, Uncertainty}
-  alias CrucibleSignalTrace.{ForwardTrace, SignalRecord}
 
   @derive Jason.Encoder
-  defstruct policy_ref: "crucible_policy:first_slice",
+  defstruct policy_ref: "crucible_policy:deterministic_route",
             high_entropy_threshold: 2.5,
             moderate_entropy_threshold: 1.25,
             verifier_margin_threshold: 0.15,
@@ -32,11 +32,6 @@ defmodule CruciblePolicy.PolicyPlan do
 
   def evaluate(%__MODULE__{} = plan, %ForwardTrace{} = trace, opts) do
     CruciblePolicy.Policy.decide(trace, Keyword.put(opts, :plan, plan))
-  end
-
-  def evaluate(%__MODULE__{} = _plan, %Crucible.ForwardTrace{} = trace, opts) do
-    config = Keyword.get(opts, :config, %Crucible.Policy.PolicyConfig{})
-    {:ok, Crucible.Policy.PolicyPlan.evaluate(trace, config)}
   end
 
   def evaluate_signal(
@@ -193,8 +188,8 @@ defmodule CruciblePolicy.PolicyPlan do
 
   defp fragment_records(%SignalRecord{} = record), do: [record]
   defp fragment_records(records) when is_list(records), do: records
-  defp fragment_records(%{signal_records: records}) when is_list(records), do: records
-  defp fragment_records(%{"signal_records" => records}) when is_list(records), do: records
+  defp fragment_records(%{signals: records}) when is_list(records), do: records
+  defp fragment_records(%{"signals" => records}) when is_list(records), do: records
 
   defp fragment_records(%{events: events}) when is_list(events),
     do: Enum.flat_map(events, &fragment_records/1)
@@ -205,18 +200,16 @@ defmodule CruciblePolicy.PolicyPlan do
 
   defp evidence_refs(records) do
     records
-    |> Enum.map(& &1.signal_ref.signal_id)
+    |> Enum.map(& &1.signal_id)
     |> Enum.reject(&is_nil/1)
     |> Enum.reverse()
   end
 
-  defp trace_id_from_window([%SignalRecord{} = record | _rest]), do: record.signal_ref.trace_id
+  defp trace_id_from_window([%SignalRecord{} = record | _rest]), do: record.trace_id
   defp trace_id_from_window(_records), do: "trace:unknown"
 
   defp model_id(%DecisionContext{runtime_profile: %{model_id: model_id}}), do: model_id
   defp model_id(%DecisionContext{runtime_profile: %{"model_id" => model_id}}), do: model_id
-  defp model_id(%DecisionContext{runtime_profile: %{model_ref: model_ref}}), do: model_ref
-  defp model_id(%DecisionContext{runtime_profile: %{"model_ref" => model_ref}}), do: model_ref
   defp model_id(_context), do: nil
 
   defp above?(value, threshold), do: is_number(value) and value >= threshold

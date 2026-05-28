@@ -55,7 +55,7 @@ steered_logits = LogitSteering.apply([0.1, 0.2, 0.3], steering)
 
 plan = PolicyPlan.new()
 context = DecisionContext.new(trace_id: "trace-1", runtime_profile: %{model_id: "model:fixture"})
-{:continue, context} = PolicyPlan.evaluate_incremental(plan, %{signal_records: []}, context)
+{:continue, context} = PolicyPlan.evaluate_incremental(plan, %{signals: []}, context)
 ```
 
 ## Model Boundary
@@ -78,19 +78,19 @@ Crucible signal and trace contracts and do not require a specific model family.
 
 Documentation can be generated with `mix docs` and published to HexDocs.
 
-## V5 Status
+## Status
 
 Status: `policy-ladder-cross-model-passing`.
 
-V5 evaluates canonical `Crucible.ForwardTrace` values with entropy, margin,
-top-k stability, spilled-energy, hidden-state norm drift, trajectory drift, and
-dry-run correction-plan policies. Missing optional signals produce explicit
-skip metadata rather than hidden fallbacks.
+Policy replay evaluates canonical `Crucible.ForwardTrace` values with entropy,
+margin, top-k stability, spilled-energy, hidden-state norm drift, trajectory
+drift, and dry-run correction-plan policies. Missing optional signals produce
+explicit skip metadata rather than hidden fallbacks.
 
 `CruciblePolicy.compare_traces/2` and
 `Crucible.Policy.CrossModelComparison.compare/2` build bounded cross-model
-reports over real traces without copying raw tensor arrays. The V5 real-trace
-gate exercised the Phase 15 Python/PyTorch `gpt2` and
+reports over real traces without copying raw tensor arrays. The current
+real-trace gate exercised the Python/PyTorch `gpt2` and
 `hf-internal-testing/tiny-random-gpt2` traces and wrote:
 
 ```text

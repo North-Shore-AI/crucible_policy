@@ -17,8 +17,8 @@ defmodule CruciblePolicyTest do
     VerifierSignal
   }
 
-  alias CrucibleSignal.{SignalRef, TensorSummary}
-  alias CrucibleSignalTrace.{ForwardTrace, SignalRecord}
+  alias Crucible.{ForwardTrace, SignalRecord, TensorSummary}
+  alias CrucibleSignalTrace.LayerTrajectory
 
   test "exposes package version" do
     assert CruciblePolicy.version() == "0.1.0"
@@ -63,12 +63,19 @@ defmodule CruciblePolicyTest do
     trace =
       ForwardTrace.new!(
         trace_id: "trace-uncertainty",
-        model_ref: "model",
-        layer_trajectory: [%{layer_index: 1, drift: 0.3}, %{layer_index: 2, drift: 0.9}],
-        signal_records: [
+        model_id: "model",
+        layer_trajectory:
+          LayerTrajectory.new!([
+            %{layer_index: 1, drift: 0.3},
+            %{layer_index: 2, drift: 0.9}
+          ]),
+        signals: [
           SignalRecord.new!(
-            signal_ref: signal_ref("bad", :final_logits),
-            summary: %{
+            trace_id: "trace-uncertainty",
+            signal_id: "final_logits:bad",
+            signal_type: :final_logits,
+            model_id: "model",
+            tensor_summary: %{
               entropy: 0.2,
               nan_count: 1,
               positive_infinity_count: 0,
@@ -208,8 +215,8 @@ defmodule CruciblePolicyTest do
 
     ForwardTrace.new!(
       trace_id: trace_id,
-      model_ref: "model:fixture",
-      signal_records: [
+      model_id: "model:fixture",
+      signals: [
         logits_record(trace_id, logits)
       ]
     )
@@ -217,31 +224,17 @@ defmodule CruciblePolicyTest do
 
   defp logits_record(trace_id, logits, opts \\ []) do
     SignalRecord.new!(
-      signal_ref:
-        signal_ref(trace_id, :final_logits,
-          token_index: Keyword.get(opts, :token_index),
-          shape: {1, length(logits)}
-        ),
-      summary: TensorSummary.summarize(logits, entropy: true)
-    )
-  end
-
-  defp signal_ref(trace_id, signal_type, opts) do
-    SignalRef.new!(
       [
         trace_id: trace_id,
-        signal_id: "#{signal_type}:0",
-        signal_type: signal_type,
-        model_ref: "model:fixture",
+        signal_id: "final_logits:#{trace_id}",
+        signal_type: :final_logits,
+        model_id: "model:fixture",
         dtype: :f32,
-        shape: Keyword.get(opts, :shape, {1, 3}),
-        token_index: Keyword.get(opts, :token_index)
+        shape: [1, length(logits)],
+        token_index: Keyword.get(opts, :token_index),
+        tensor_summary: TensorSummary.compute(logits, entropy: true, top_k: 10)
       ]
       |> Enum.reject(fn {_key, value} -> is_nil(value) end)
     )
-  end
-
-  defp signal_ref(trace_id, signal_type) do
-    signal_ref(trace_id, signal_type, [])
   end
 end
