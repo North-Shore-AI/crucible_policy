@@ -4,7 +4,7 @@ defmodule CruciblePolicy.PolicyPlan do
   """
 
   alias Crucible.{ForwardTrace, SignalRecord}
-  alias CruciblePolicy.{DecisionContext, RouteDecision, SteeringPlan, Uncertainty}
+  alias CruciblePolicy.{DecisionContext, Evidence, RouteDecision, SteeringPlan, Uncertainty}
 
   @derive Jason.Encoder
   defstruct policy_ref: "crucible_policy:deterministic_route",
@@ -157,8 +157,13 @@ defmodule CruciblePolicy.PolicyPlan do
       selected_model: model_id(context),
       confidence: confidence,
       uncertainty: %{uncertainty | policy_confidence: confidence},
-      evidence_refs: evidence_refs(context.signal_window),
-      metadata: %{policy: :incremental, token_index: context.token_index}
+      evidence_refs: Evidence.refs_from_signals(context.signal_window),
+      metadata: %{
+        policy: :incremental,
+        token_index: context.token_index,
+        missing_evidence: [],
+        degraded_evidence: []
+      }
     )
   end
 
@@ -197,13 +202,6 @@ defmodule CruciblePolicy.PolicyPlan do
   defp fragment_records(%{record: %SignalRecord{} = record}), do: [record]
   defp fragment_records(%{"record" => %SignalRecord{} = record}), do: [record]
   defp fragment_records(_fragment), do: []
-
-  defp evidence_refs(records) do
-    records
-    |> Enum.map(& &1.signal_id)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.reverse()
-  end
 
   defp trace_id_from_window([%SignalRecord{} = record | _rest]), do: record.trace_id
   defp trace_id_from_window(_records), do: "trace:unknown"

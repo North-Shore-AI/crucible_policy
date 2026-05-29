@@ -4,7 +4,7 @@ defmodule CruciblePolicy.Policy do
   """
 
   alias Crucible.ForwardTrace
-  alias CruciblePolicy.{PolicyPlan, RouteDecision, Uncertainty}
+  alias CruciblePolicy.{Evidence, PolicyPlan, RouteDecision, Uncertainty}
 
   def decide(%ForwardTrace{} = trace, opts \\ []) do
     plan = normalize_plan(Keyword.get(opts, :plan, %{}))
@@ -30,8 +30,12 @@ defmodule CruciblePolicy.Policy do
        selected_model: Keyword.get(opts, :selected_model, trace.model_id),
        confidence: confidence,
        uncertainty: %{uncertainty | policy_confidence: confidence},
-       evidence_refs: evidence_refs(trace),
-       metadata: %{policy: :deterministic_route}
+       evidence_refs: Evidence.refs_from_trace(trace),
+       metadata: %{
+         policy: :deterministic_route,
+         missing_evidence: Evidence.missing_entries(trace),
+         degraded_evidence: Evidence.degraded_entries(trace)
+       }
      )}
   end
 
@@ -62,12 +66,6 @@ defmodule CruciblePolicy.Policy do
   defp contradictory_margin?(%Uncertainty{} = uncertainty, %PolicyPlan{} = plan) do
     below_or_equal?(uncertainty.margin, plan.verifier_margin_threshold) and
       not above_or_equal?(uncertainty.entropy, plan.high_entropy_threshold)
-  end
-
-  defp evidence_refs(%ForwardTrace{} = trace) do
-    trace.signals
-    |> Enum.map(& &1.signal_id)
-    |> Enum.reject(&is_nil/1)
   end
 
   defp above_or_equal?(value, threshold), do: is_number(value) and value >= threshold
