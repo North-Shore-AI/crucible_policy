@@ -3,7 +3,7 @@ defmodule CruciblePolicy.RouteDecision do
   Model, role, or target route decision.
   """
 
-  alias CruciblePolicy.Decision
+  alias CruciblePolicy.{Decision, SafeTerms}
 
   @derive Jason.Encoder
   defstruct decision: nil,
@@ -31,12 +31,5 @@ defmodule CruciblePolicy.RouteDecision do
     }
   end
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end

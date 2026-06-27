@@ -4,7 +4,7 @@ defmodule CruciblePolicy.DecisionContext do
   """
 
   alias Crucible.SignalRecord
-  alias CruciblePolicy.{RunningScalar, Uncertainty}
+  alias CruciblePolicy.{RunningScalar, SafeTerms, Uncertainty}
 
   @derive Jason.Encoder
   defstruct trace_id: nil,
@@ -115,7 +115,7 @@ defmodule CruciblePolicy.DecisionContext do
     |> Enum.map(fn {key, _enabled?} -> key end)
   end
 
-  defp normalize_capability(value) when is_binary(value), do: String.to_atom(value)
+  defp normalize_capability(value) when is_binary(value), do: SafeTerms.atomize_existing(value)
   defp normalize_capability(value), do: value
 
   defp normalize_uncertainty(%Uncertainty{} = uncertainty), do: uncertainty
@@ -124,12 +124,5 @@ defmodule CruciblePolicy.DecisionContext do
   defp normalize_running_scalar(%RunningScalar{} = scalar), do: scalar
   defp normalize_running_scalar(attrs), do: RunningScalar.new(attrs)
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end

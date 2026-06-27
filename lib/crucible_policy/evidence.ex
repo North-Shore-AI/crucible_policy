@@ -4,7 +4,7 @@ defmodule CruciblePolicy.Evidence do
   """
 
   alias Crucible.{CapabilityReport, ForwardTrace, SignalRecord}
-  alias CruciblePolicy.EvidenceRef
+  alias CruciblePolicy.{EvidenceRef, SafeTerms}
 
   @type missing_entry :: %{
           signal_type: atom() | String.t() | nil,
@@ -139,6 +139,9 @@ defmodule CruciblePolicy.Evidence do
   end
 
   defp capability_atom(capability) when is_atom(capability), do: capability
-  defp capability_atom(capability) when is_binary(capability), do: String.to_atom(capability)
+
+  defp capability_atom(capability) when is_binary(capability),
+    do: SafeTerms.atomize_existing(capability)
+
   defp capability_atom(_), do: nil
 end

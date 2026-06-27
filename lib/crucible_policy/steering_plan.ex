@@ -3,7 +3,7 @@ defmodule CruciblePolicy.SteeringPlan do
   Decode steering plan, initially consumed by logits processors.
   """
 
-  alias CruciblePolicy.Decision
+  alias CruciblePolicy.{Decision, SafeTerms}
 
   @derive Jason.Encoder
   defstruct decision: nil,
@@ -104,15 +104,8 @@ defmodule CruciblePolicy.SteeringPlan do
 
   defp supports?(_context, _capability), do: false
 
-  defp normalize_capability(value) when is_binary(value), do: String.to_atom(value)
+  defp normalize_capability(value) when is_binary(value), do: SafeTerms.atomize_existing(value)
   defp normalize_capability(value), do: value
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end

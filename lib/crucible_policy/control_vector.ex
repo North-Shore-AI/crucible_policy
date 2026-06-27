@@ -3,7 +3,7 @@ defmodule CruciblePolicy.ControlVector do
   Contract for downstream vector steering.
   """
 
-  alias CruciblePolicy.GateDecision
+  alias CruciblePolicy.{GateDecision, SafeTerms}
 
   @derive Jason.Encoder
   defstruct vector_id: nil,
@@ -89,15 +89,8 @@ defmodule CruciblePolicy.ControlVector do
 
   defp supports?(_capabilities, _capability), do: false
 
-  defp normalize_capability(value) when is_binary(value), do: String.to_atom(value)
+  defp normalize_capability(value) when is_binary(value), do: SafeTerms.atomize_existing(value)
   defp normalize_capability(value), do: value
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end

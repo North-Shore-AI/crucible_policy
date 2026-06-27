@@ -3,6 +3,8 @@ defmodule CruciblePolicy.RunningScalar do
   Online scalar statistics for incremental token-boundary policy state.
   """
 
+  alias CruciblePolicy.SafeTerms
+
   @derive Jason.Encoder
   defstruct count: 0,
             mean: nil,
@@ -53,12 +55,5 @@ defmodule CruciblePolicy.RunningScalar do
   defp max_value(nil, value), do: value
   defp max_value(current, value), do: max(current, value)
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end

@@ -3,6 +3,8 @@ defmodule CruciblePolicy.Decision do
   Shared decision fields embedded by concrete policy decisions.
   """
 
+  alias CruciblePolicy.SafeTerms
+
   @derive Jason.Encoder
   defstruct decision_id: nil,
             trace_id: nil,
@@ -30,12 +32,5 @@ defmodule CruciblePolicy.Decision do
     }
   end
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end

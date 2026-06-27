@@ -8,6 +8,7 @@ defmodule CruciblePolicy.RoundTripTest do
     RouteDecision,
     SharedMemoryWrite,
     SteeringPlan,
+    VerifierDecision,
     VerifierSignal
   }
 
@@ -17,6 +18,7 @@ defmodule CruciblePolicy.RoundTripTest do
       GateDecision.new!(trace_id: "trace-1", action: :continue),
       FusionDecision.new!(trace_id: "trace-1", fusion_mode: :weighted_logits),
       SteeringPlan.new!(trace_id: "trace-1", token_biases: %{1 => 0.5}),
+      VerifierDecision.new!(trace_id: "trace-1", verifier_ref: "verifier", score: 0.9),
       %VerifierSignal{verifier_ref: "verifier", trace_id: "trace-1", score: 0.9, passed?: true},
       ControlVector.new!(vector_id: "cv", trace_id: "trace-1"),
       SharedMemoryWrite.new!(memory_ref: "mem", trace_id: "trace-1")

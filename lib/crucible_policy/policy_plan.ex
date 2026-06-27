@@ -4,7 +4,15 @@ defmodule CruciblePolicy.PolicyPlan do
   """
 
   alias Crucible.{ForwardTrace, SignalRecord}
-  alias CruciblePolicy.{DecisionContext, Evidence, RouteDecision, SteeringPlan, Uncertainty}
+
+  alias CruciblePolicy.{
+    DecisionContext,
+    Evidence,
+    RouteDecision,
+    SafeTerms,
+    SteeringPlan,
+    Uncertainty
+  }
 
   @derive Jason.Encoder
   defstruct policy_ref: "crucible_policy:deterministic_route",
@@ -215,12 +223,5 @@ defmodule CruciblePolicy.PolicyPlan do
   defp below_or_equal?(value, threshold), do: is_number(value) and value <= threshold
   defp truthy?(value), do: value in [true, "true", 1]
 
-  defp normalize_attrs(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize_attrs()
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    Map.new(attrs, fn
-      {key, value} when is_binary(key) -> {String.to_atom(key), value}
-      {key, value} -> {key, value}
-    end)
-  end
+  defp normalize_attrs(attrs), do: SafeTerms.normalize_attrs(attrs)
 end
